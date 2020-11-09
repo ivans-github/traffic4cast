@@ -23,6 +23,13 @@ class TrafficDataset(torch.utils.data.Dataset):
         self.time_step = time_step
         self.bs = bs
         self.num_frames_perday = 1 + (288 - self.num_in_frames - self.num_out_frames)
+        input_mask_loc = Path(f'../storage/{city}/{city}_Mask_5.pt')
+        if input_mask_loc.is_file():
+            self.mask=torch.load(input_mask_loc)
+            print('Using input mask')
+        else:
+            self.mask=None
+            print('No input mask found. Carrying on wihtout applying any input mask')
         
         if not self.path.exists():
             untar(f'../storage/{city}.tar')
@@ -66,6 +73,9 @@ class TrafficDataset(torch.utils.data.Dataset):
             raw = h5py.File(self.filelist[file_idx], 'r').get('array')
             extract = raw[frame_idxs[0]:(frame_idxs[-1] + self.num_in_frames + self.num_out_frames), ...].astype(np.float32)
             
+            if self.mask != None:
+                extract =np.moveaxis(np.moveaxis(extract, -1,0)*self.mask.numpy(), 0,-1)
+
             for frame_idx in frame_idxs:
                 i = frame_idx - frame_idxs[0]
                 
