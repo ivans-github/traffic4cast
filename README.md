@@ -7,6 +7,9 @@ Run `train.ipynb`
 ## To Create a Submission
 Run `run.ipynb`
 
+
+
 For the GNN work please see:
 https://github.com/qiq208/traffic4cast_graph
+
 The input mask is also created in the graph repo
