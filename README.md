@@ -8,7 +8,7 @@ Run `train.ipynb`
 Run `run.ipynb`
 
 
-
+## Graph Neural Network Method
 For the GNN work please see:
 https://github.com/qiq208/traffic4cast_graph
 
