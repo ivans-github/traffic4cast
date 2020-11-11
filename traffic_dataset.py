@@ -15,30 +15,31 @@ def untar(filename, outpath='../storage/'):
 
 class TrafficDataset(torch.utils.data.Dataset):
     
-    def __init__(self, city='MOSCOW', partition='training', num_in_frames=12, num_out_frames=12, time_step=1, bs=None):
+    def __init__(self, data_folder, city='MOSCOW', partition='training', num_in_frames=12, num_out_frames=12, time_step=1, bs=None):
         
-        self.path = Path(f'../storage/{city}/{partition}')
+        self.path = Path(f'{data_folder}/{city}/{partition}')
         self.num_in_frames = num_in_frames
         self.num_out_frames = num_out_frames
         self.time_step = time_step
         self.bs = bs
         self.num_frames_perday = 1 + (288 - self.num_in_frames - self.num_out_frames)
-        input_mask_loc = Path(f'../storage/{city}/{city}_Mask_5.pt')
+        input_mask_loc = Path(f'{data_folder}/{city}/{city}_Mask_5.pt')
         if input_mask_loc.is_file():
             self.mask=torch.load(input_mask_loc)
             print('Using input mask')
         else:
             self.mask=None
-            print('No input mask found. Carrying on wihtout applying any input mask')
+            print(f'No input mask found in {input_mask_loc}. Carrying on wihtout applying any input mask')
         
         if not self.path.exists():
-            untar(f'../storage/{city}.tar')
+            print(f'No input data found in:  {self.path}')
+            #untar(f'{data_folder}/{city}.tar')
         
         self.num_days = len(self.path.ls())
         self.filelist = sorted(self.path.ls())
         
         # load static features
-        with h5py.File(f'../storage/{city}/{city}_static_2019.h5', 'r') as static_file:
+        with h5py.File(f'{data_folder}/{city}/{city}_static_2019.h5', 'r') as static_file:
             static_features = static_file.get('array')[()].astype(np.float32)
             static_features = torch.from_numpy(static_features).permute(2, 0, 1)
         self.static_features = static_features

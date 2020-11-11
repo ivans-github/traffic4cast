@@ -4,8 +4,8 @@
 ## To Train a Model
 Run `train.ipynb`
 
-## To Create a Submission
-Run `run.ipynb`
+## To run the leaderboard submission
+Run `validate.ipynb`
 
 
 ## Graph Neural Network Method

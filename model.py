@@ -50,10 +50,13 @@ class UpConvBlock(nn.Module):
 ############################################################################################
 
 class NetO(nn.Module):
-    def __init__(self, num_in_frames=12, num_out_frames=12):
+    def __init__(self, num_in_frames=12, num_out_frames=12, active_node_feat = False, learn_incident=False):
         super().__init__()
         
-        self.enc1 = DenseBlock(9*num_in_frames+3*9+7+1, 64, 4)
+        in_channels =9*num_in_frames+3*9+7+1
+        if active_node_feat:
+            in_channels +=1
+        self.enc1 = DenseBlock(in_channels, 64, 4)
         self.enc2 = AvgPoolDenseBlock(64, 96, 4)
         self.enc3 = AvgPoolDenseBlock(96, 128, 4)
         self.enc4 = AvgPoolDenseBlock(128, 128, 4)
@@ -79,14 +82,18 @@ class NetO(nn.Module):
         self.dec1_1 = UpConvBlock(128, 128)
         self.dec1_2 = ConvBlock(128+64, 128)
         
-        self.out_1 = nn.Conv2d(128, 8*num_out_frames, kernel_size=3, stride=1, padding=1)
+        self.num_out_features = 8
+        if learn_incident:
+            self.num_out_features = 9
+        
+        self.out_1 = nn.Conv2d(128, self.num_out_features*num_out_frames, kernel_size=3, stride=1, padding=1)
         self.out_2 = nn.Sigmoid()
           
     def forward(self, x):
         
         x0 = x[:,:108,...]               # 4, 108, 495, 436
-        s = x[:,108:115,...]             # 4, 7, 495, 436
-        t = x[:,115,...].unsqueeze(1)    # 4, 1, 495, 436
+        s = x[:,108:,...]             # 4, 7, 495, 436
+        #t = x[:,115,...].unsqueeze(1)    # 4, 1, 495, 436
         
         N, C, H, W = x0.shape            # 4, 108, 495, 436
         x0r = x0.reshape(N, 9, 12, H, W) # 4, 9, 12, 495, 436
@@ -94,7 +101,7 @@ class NetO(nn.Module):
         x0_std = x0r.std(dim=2)
         x0_rng = x0r.max(dim=2).values - x0r.min(dim=2).values
         
-        x = torch.cat([x0, x0_mean, x0_std, x0_rng, s, t], dim=1)
+        x = torch.cat([x0, x0_mean, x0_std, x0_rng, s], dim=1)
         x = x / 255.
         
         x1 = self.enc1(x)
@@ -117,4 +124,4 @@ class NetO(nn.Module):
         x101 = self.dec1_2(self.dec1_1(x102, x1))
         
         out = self.out_2(self.out_1(x101))*255.
-        return out.view(N, 8, -1, H, W)
+        return out.view(N, self.num_out_features, -1, H, W)
